@@ -1,0 +1,3 @@
+src/DGP/
+*.o
+meshdesc
