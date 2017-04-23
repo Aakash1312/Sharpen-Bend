@@ -24,6 +24,8 @@ int Viewer::drag_start_y = -1;
 bool Viewer::show_bbox = false;
 bool Viewer::show_edges = false;
 std::vector<MeshEdge *> highlighted_edges;
+std::vector<MeshFace *> highlighted_faces;
+std::vector<MeshVertex *> highlighted_vertices;
 
 void
 Viewer::setObject(Mesh * o)
@@ -206,16 +208,34 @@ Viewer::draw()
             render_system->sendVertex(highlighted_edges[i]->getEndpoint(1) -> getPosition());
           render_system->endPrimitive();
         }
-        // if (highlighted_edges)
-        // {
-        //   render_system->setShader(NULL);
-        //   render_system->setColor(ColorRGB(1, 0, 0));
-        //   render_system->setPointSize(10);
 
-        //   render_system->beginPrimitive(Graphics::RenderSystem::Primitive::POINTS);
-        //     render_system->sendVertex(highlighted_edges->getPosition());
-        //   render_system->endPrimitive();
-        // }
+
+        HSize = highlighted_faces.size();
+        for (int i = 0; i < HSize; ++i)
+        {
+          render_system->setShader(NULL);
+          render_system->setColor(ColorRGB(0, 1, 0));
+          // render_system->setLineSize(10);
+
+          render_system->beginPrimitive(Graphics::RenderSystem::Primitive::POLYGON);
+          for (std::list<MeshVertex*> ::iterator it = (highlighted_faces[i] -> verticesBegin()); it != (highlighted_faces[i] -> verticesEnd()); ++it)
+          {
+            render_system->sendVertex((*it) -> getPosition());
+          }
+          render_system->endPrimitive();
+        }        // if (highlighted_edges)
+ 
+        HSize = highlighted_vertices.size();
+        for (int i = 0; i < HSize; ++i)
+        {
+          render_system->setShader(NULL);
+          render_system->setColor(ColorRGB(1, 1, 0));
+          render_system->setPointSize(10);
+
+          render_system->beginPrimitive(Graphics::RenderSystem::Primitive::POINTS);
+            render_system->sendVertex(highlighted_vertices[i]->getPosition());
+          render_system->endPrimitive();
+        }
 
       render_system->popShader();
 
@@ -304,9 +324,30 @@ Viewer::keyPress(unsigned char key, int x, int y)
   else if (key == 'd' || key == 'd')
   {
     // highlighted_edges = mesh->decimateQuadricEdgeCollapse();
-    mesh -> getSmoothEdges(highlighted_edges);
+    highlighted_edges.clear();
+    mesh ->getNonSmoothEdges(highlighted_edges);
+    // mesh -> getSmoothFaces(highlighted_faces);
     glutPostRedisplay();
   }
+    else if (key == 'a' || key == 'A')
+  {
+    highlighted_faces.clear();
+    mesh -> getSmoothFaces(highlighted_faces,highlighted_edges);
+    glutPostRedisplay();
+  }
+    else if (key == 'c' || key == 'C')
+  {
+    highlighted_edges.clear();
+    mesh -> getBrownEdges(highlighted_edges);
+    glutPostRedisplay();
+  }
+    else if (key == 'v' || key == 'V')
+  {
+    highlighted_vertices.clear();
+    mesh -> getBrownVertices(highlighted_vertices);
+    glutPostRedisplay();
+  }
+
 }
 
 void

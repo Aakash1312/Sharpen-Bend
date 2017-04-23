@@ -21,8 +21,8 @@ main(int argc, char * argv[])
     return usage(argc, argv);
 
   std::string in_path = argv[1];
-
   Mesh mesh;
+  // mesh.loadOBJ(in_path);
   if (!mesh.load(in_path))
     return -1;
 

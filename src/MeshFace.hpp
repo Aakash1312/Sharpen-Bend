@@ -31,9 +31,11 @@ class MeshFace
     typedef typename EdgeList::const_iterator            EdgeConstIterator;           ///< Const iterator over edges.
     typedef typename EdgeList::reverse_iterator          EdgeReverseIterator;         ///< Reverse iterator over edges.
     typedef typename EdgeList::const_reverse_iterator    EdgeConstReverseIterator;    ///< Const reverse iterator over edges.
-
+    bool is_smooth;
+    void smoothen(std::vector<MeshVertex*> &v, std::vector<MeshEdge*> &e);
+    void collectEdges(std::vector<MeshEdge*> &e);
     /** Construct with the given normal. */
-    MeshFace(Vector3 const & normal_ = Vector3::zero()) : normal(normal_) {}
+    MeshFace(Vector3 const & normal_ = Vector3::zero()) : normal(normal_) {is_smooth = false;}
 
     /** Check if the face has a given vertex. */
     bool hasVertex(Vertex const * vertex) const
@@ -235,6 +237,8 @@ class MeshFace
     EdgeReverseIterator edgesReverseEnd() { return edges.rend(); }
 
     double volume() const;
+    double triangleArea(Vector3 positions[]) const;
+    double area();
     double signedVolume(Vector3 positions[]) const;
     bool isFacingOrigin() const;
     /** Get the number of vertices of the face. */

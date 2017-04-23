@@ -37,22 +37,22 @@ class MeshVertex
     typedef typename EdgeList::const_iterator  EdgeConstIterator;  ///< Const iterator over edges.
     typedef typename FaceList::iterator        FaceIterator;       ///< Iterator over faces.
     typedef typename FaceList::const_iterator  FaceConstIterator;  ///< Const iterator over faces.
-
+    bool is_smooth;
     /** Default constructor. */
     MeshVertex()
     : position(Vector3::zero()), normal(Vector3::zero()), color(ColorRGBA(1, 1, 1, 1)), has_precomputed_normal(false),
-      normal_normalization_factor(0) {}
+      normal_normalization_factor(0) {is_smooth = false;}
 
     /** Sets the vertex to have a given location. */
     explicit MeshVertex(Vector3 const & p)
     : position(p), normal(Vector3::zero()), color(ColorRGBA(1, 1, 1, 1)), has_precomputed_normal(false),
       normal_normalization_factor(0)
-    {}
+    {is_smooth = false;}
 
     /** Sets the vertex to have a location, normal and color. */
     MeshVertex(Vector3 const & p, Vector3 const & n, ColorRGBA const & c = ColorRGBA(1, 1, 1, 1))
     : position(p), normal(n), color(c), has_precomputed_normal(true), normal_normalization_factor(0)
-    {}
+    {is_smooth = false;}
 
     /**
      * Get the number of edges incident on the vertex. Equivalent to degree().
@@ -154,6 +154,10 @@ class MeshVertex
 
     /** Set the color of the vertex. */
     void setColor(ColorRGBA const & color_) { color = color_; }
+
+    bool isSmooth();
+
+    void markFaces(std::vector<MeshFace*> &v);
 
   private:
     friend class Mesh;

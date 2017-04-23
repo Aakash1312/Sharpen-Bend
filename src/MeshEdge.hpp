@@ -21,12 +21,15 @@ class MeshEdge
   public:
     typedef typename FaceList::iterator        FaceIterator;       ///< Iterator over faces.
     typedef typename FaceList::const_iterator  FaceConstIterator;  ///< Const iterator over faces.
-
+    bool is_smooth;
+    bool is_brown;
     /** Construct from two endpoints. */
     MeshEdge(Vertex * v0 = NULL, Vertex * v1 = NULL)
     {
       endpoints[0] = v0;
       endpoints[1] = v1;
+      is_smooth = false;
+      is_brown = false;
     }
 
     /** Get an endpoint of the edge. \a i = 0 returns the first endpoint and \a i = 1 the second. */
@@ -151,6 +154,9 @@ class MeshEdge
     bool isSmooth(double threshold);
 
     double getFaceAngle();
+    double getWeight();
+
+    int setNonSmoothFace(std::vector<MeshFace*> &v);
 
   private:
     friend class Mesh;

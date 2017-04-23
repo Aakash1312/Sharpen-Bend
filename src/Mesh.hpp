@@ -99,6 +99,10 @@ class Mesh : public virtual NamedObject, private Noncopyable
     double getThreshold();
 
     void getSmoothEdges(std::vector<MeshEdge*> &v);
+    void getNonSmoothEdges(std::vector<MeshEdge*> &v);
+    void getSmoothFaces(std::vector<MeshFace*> &smooth_faces, std::vector<MeshEdge*> smooth_edges);
+    void getBrownEdges(std::vector<MeshEdge*> &v);
+    void getBrownVertices(std::vector<MeshVertex*> &brown_vertices);
     /**
      * Add a vertex to the mesh, with a given location.
      *
@@ -134,6 +138,7 @@ class Mesh : public virtual NamedObject, private Noncopyable
     Face * addFace(VertexInputIterator vbegin, VertexInputIterator vend)
     {
       // Check for errors and compute normal
+
       size_t num_verts = 0;
       Vector3 v[3];
       for (VertexInputIterator vi = vbegin; vi != vend; ++vi, ++num_verts)
@@ -160,7 +165,6 @@ class Mesh : public virtual NamedObject, private Noncopyable
 
         face->addVertex(*vi);
         (*vi)->addFace(face, false);  // we'll update the normals later
-
         Edge * edge = (*vi)->getEdgeTo(*next);
         if (!edge)
         {
@@ -287,7 +291,7 @@ class Mesh : public virtual NamedObject, private Noncopyable
 
     /** Load the mesh from an OFF file. */
     bool loadOFF(std::string const & path);
-
+    bool loadOBJ(std::string const & path);
     /** Save the mesh to an OFF file. */
     bool saveOFF(std::string const & path) const;
 

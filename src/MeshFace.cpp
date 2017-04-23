@@ -112,6 +112,42 @@ MeshFace::signedVolume(Vector3 positions[]) const
 }
 
 double
+MeshFace::triangleArea(Vector3 positions[]) const
+{
+  double a = (positions[0] - positions[1]).length();
+  double b = (positions[1] - positions[2]).length();
+  double c = (positions[0] - positions[2]).length();
+  double s = (a + b + c)/2;
+  return sqrt(s*(s-a)*(s-b)*(s-c));
+}
+
+double
+MeshFace::area()
+{
+  VertexConstIterator vi    =  verticesBegin();
+  VertexConstIterator last  =  vi++;
+  Polygon3 p = Polygon3();
+  for ( ; last != verticesEnd(); ++vi)
+  {
+    p.addVertex((*last) -> getPosition());
+    last = vi;
+  }
+  std::vector<long> indices;
+  double area = 0.0;
+  long n = 3 * p.triangulate(indices);
+  for (int i = 0; i < n;)
+  {
+    Vector3 positions[3];
+    for (int j = 0; j < 3; ++i, ++j)
+    {
+      positions[i] = p.getVertex(indices[i]).position;
+    }
+    area += triangleArea(positions);
+  }
+  return area;  
+}
+
+double
 MeshFace::volume() const
 {
   VertexConstIterator vi    =  verticesBegin();
@@ -134,9 +170,27 @@ MeshFace::volume() const
     }
     volume += signedVolume(positions);
   }
-  // if (isFacingOrigin())
-  // {
-  //   return -1.0 * volume;
-  // }
   return volume;
+}
+
+void
+MeshFace::smoothen(std::vector<MeshVertex*> &v, std::vector<MeshEdge*> &e)
+{
+  for (EdgeIterator ej = edges.begin(); ej != edges.end(); ++ej)
+  {
+    e.push_back(*ej);
+  }
+  for (VertexIterator vj = vertices.begin(); vj != vertices.end(); ++vj)
+  {
+    v.push_back(*vj);
+  }
+}
+
+void
+MeshFace::collectEdges(std::vector<MeshEdge*> &e)
+{
+  for (EdgeIterator ej = edges.begin(); ej != edges.end(); ++ej)
+  {
+      e.push_back(*ej);
+  }
 }

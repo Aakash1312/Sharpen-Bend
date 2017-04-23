@@ -10,7 +10,7 @@
 // Forward declaration
 class Mesh;
 class MeshEdge;
-
+class MeshVertex;
 /* Displays an object using OpenGL and GLUT. */
 class Viewer
 {

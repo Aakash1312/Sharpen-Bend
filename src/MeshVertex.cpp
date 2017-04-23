@@ -72,3 +72,31 @@ MeshVertex::updateNormal()
 
   has_precomputed_normal = false;
 }
+
+bool
+MeshVertex::isSmooth()
+{ 
+  for (EdgeIterator ei = edgesBegin(); ei != edgesEnd(); ei++)
+  {
+    if (!((*ei) -> is_brown))
+    {
+      return false;
+    }
+  }
+  is_smooth = true;
+  return true;
+}
+
+void
+MeshVertex::markFaces(std::vector<MeshFace*> &v)
+{
+  for (FaceIterator vj = faces.begin(); vj != faces.end(); ++vj)
+  {
+    if (!((*vj) -> is_smooth))
+    {
+      v.push_back(*vj);
+      (*vj) -> is_smooth = true;
+    }
+  }
+}
+

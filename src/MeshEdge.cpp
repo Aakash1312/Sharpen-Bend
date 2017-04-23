@@ -37,6 +37,12 @@ double MeshEdge::getFaceAngle()
  
 }
 
+double MeshEdge::getWeight()
+{
+  FaceIterator fi1 = facesBegin();
+  FaceIterator fi2 = ++facesBegin();
+  return (((*fi1) -> area()) + ((*fi2) -> area()));
+}
 bool
 MeshEdge::isSmooth(double threshold)
 {
@@ -47,7 +53,34 @@ MeshEdge::isSmooth(double threshold)
   }
   if (angle < threshold)
   {
+    is_brown = true;
     return true;
   }
   return false;
+}
+
+int
+MeshEdge::setNonSmoothFace(std::vector<MeshFace*> &v)
+{
+  FaceIterator f1 = facesBegin();
+  FaceIterator f2 = ++facesBegin();
+  if (((*f1) -> is_smooth) && ((*f2) -> is_smooth))
+  {
+    return 0;
+  }
+  if (!((*f1) -> is_smooth) && !((*f2) -> is_smooth))
+  {
+    return -1;
+  }
+  if (((*f1) -> is_smooth))
+  {
+    (*f2) -> is_smooth = true;
+    v.push_back((*f2));
+  }
+  else
+  {
+    (*f1) -> is_smooth = true;
+    v.push_back((*f1));
+  }
+  return 1;
 }
