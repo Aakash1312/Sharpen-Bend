@@ -626,7 +626,7 @@ void copy(std::vector<MeshEdge*> &A, std::vector<MeshEdge*> &B)
 }
 ////////////////////////////////////////////////////////////////////////////////////////
 void
-Mesh::getNonSmoothEdges(std::vector<MeshEdge*> &v)
+Mesh::getChamferEdgeAndFace(std::set<MeshEdge*> &v, std::set<MeshFace*> &f, std::set<MeshFace*> &f1, std::set<MeshFace*> &f2)
 {
   std::vector<MeshEdge*> smooth_edges;//brown edges
   std::vector<MeshVertex*> smooth_vertices;
@@ -690,9 +690,203 @@ Mesh::getNonSmoothEdges(std::vector<MeshEdge*> &v)
     {
       if (((*ej).getEndpoint(0)) -> is_smooth && ((*ej).getEndpoint(1)) -> is_smooth)
       {
-        v.push_back(&(*ej));
+        v.insert(&(*ej));
+        (*ej).is_chamfer = true;
       }
     }
+  }
+
+  std::vector<MeshEdge*> temp_face_edges;
+  for (FaceIterator fj = faces.begin(); fj != faces.end(); ++fj)
+  {
+    temp_face_edges.clear();
+    (*fj).collectEdges(temp_face_edges);
+    int counter = 0;
+    for (int i = 0; i < temp_face_edges.size(); ++i)
+    {
+      if ((temp_face_edges[i] -> is_chamfer))
+      {
+        counter++;
+      }
+    }
+    if (counter == temp_face_edges.size())
+    {
+      (*fj).is_chamfer = true;
+      f.insert(&(*fj));
+    }
+    if (counter == 1)
+    {
+      f1.insert(&(*fj));
+    }
+    if (counter == 2)
+    {
+      f2.insert(&(*fj));
+    }
+  }
+
+}
+void
+Mesh::triangulate(MeshFace* f, int num)
+{
+  if (num == 3)
+  {
+    /* code */
+  }
+  if (num == 2)
+  {
+    MeshVertex* s[3];
+    MeshVertex* m[2];
+    MeshEdge* ea[2];
+    int k = 0;
+    for (MeshFace::EdgeIterator ej = f -> edges.begin(); ej != f -> edges.end(); ++ej)
+    {
+      if ((*ej) -> is_chamfer)
+      {
+        ea[k] = &(*(*ej));
+        k++;
+      }
+      if (k == 2)
+      {
+        break;
+      }
+    }
+    s[0] = (ea[0] -> getEndpoint(0));
+    s[1] = (ea[0] -> getEndpoint(1));
+    if (ea[1] -> hasEndpoint(s[1]))
+    {
+      s[2] = ea[1] -> getOtherEndpoint(s[1]);
+    }
+    else
+    {
+      s[1] = (ea[0] -> getEndpoint(0));
+      s[0] = (ea[0] -> getEndpoint(1));
+      s[2] = ea[1] -> getOtherEndpoint(s[1]);
+    }
+
+    int orientation = 1;
+    m[0] = getSharpVertex(ea[0], ea[0] -> orientation);
+    if ((ea[0] -> getEndpoint(0) == ea[1] -> getEndpoint(0)) || (ea[0] -> getEndpoint(1) == ea[1] -> getEndpoint(1)))
+    {
+      orientation = 1;
+    }
+    else
+    {
+      orientation = -1 * (ea[0] -> orientation);
+      ea[1] -> orientation = orientation;
+    }
+    m[1] = getSharpVertex(ea[1], ea[1] -> orientation);
+
+    std::vector<MeshVertex*> mesh_vertices;
+
+    mesh_vertices.push_back(s[0]);
+    mesh_vertices.push_back(m[1]);
+    mesh_vertices.push_back(m[0]);
+    addFace(mesh_vertices.begin(), mesh_vertices.end());
+
+    mesh_vertices.clear();
+    mesh_vertices.push_back(m[0]);
+    mesh_vertices.push_back(s[1]);
+    mesh_vertices.push_back(m[1]);
+    addFace(mesh_vertices.begin(), mesh_vertices.end());
+
+    mesh_vertices.clear();
+    mesh_vertices.push_back(s[0]);
+    mesh_vertices.push_back(m[1]);
+    mesh_vertices.push_back(s[2]);
+    addFace(mesh_vertices.begin(), mesh_vertices.end());
+  }
+
+  if (num == 1)
+  {
+    MeshVertex* s[3];
+    MeshVertex* m;
+    MeshEdge* se = NULL;
+    MeshEdge* nse = NULL;
+    for (MeshFace::EdgeIterator ej = f -> edges.begin(); ej != f -> edges.end(); ++ej)
+    {
+      if (se != NULL && nse != NULL)
+      {
+        break;
+      }
+      if ((*ej) -> is_chamfer)
+      {
+        se = (*ej);
+      }
+      else
+      {
+        nse =(*ej);
+      }
+    }
+    s[0] = se -> getEndpoint(0);
+    s[1] = se -> getEndpoint(1);
+    if (nse->hasEndpoint(s[0])) {
+      s[2] = nse->getOtherEndpoint(s[0]);
+    } else {
+      s[2] = nse->getOtherEndpoint(s[1]);
+    }
+    int orientation = 1;
+    m = getSharpVertex(se, orientation);
+    std::vector<MeshVertex*> mesh_vertices;
+    mesh_vertices.push_back(s[2]);
+    mesh_vertices.push_back(s[0]);
+    mesh_vertices.push_back(m);
+    addFace(mesh_vertices.begin(), mesh_vertices.end());
+
+    mesh_vertices.clear();
+    mesh_vertices.push_back(s[2]);
+    mesh_vertices.push_back(s[1]);
+    mesh_vertices.push_back(m);
+    addFace(mesh_vertices.begin(), mesh_vertices.end());
+ 
+  }
+}
+
+MeshVertex*
+Mesh::getSharpVertex(MeshEdge* ea, int &orientation)
+{
+  Vector3 A;
+  Vector3 B;
+  Vector3 N;
+  Vector3 M;
+  if (orientation == 1)
+  {
+    A = ea -> getEndpoint(0) -> getPosition();
+    B = ea -> getEndpoint(1) -> getPosition();
+    N = ea -> getEndpoint(0) -> computeSmoothNormal();
+    M = ea -> getEndpoint(1) -> computeSmoothNormal();
+  }
+  if (orientation == -1)
+  {
+    A = ea -> getEndpoint(1) -> getPosition();
+    B = ea -> getEndpoint(0) -> getPosition();
+    N = ea -> getEndpoint(1) -> computeSmoothNormal();
+    M = ea -> getEndpoint(0) -> computeSmoothNormal();
+  }
+    N.unitize();
+    M.unitize();
+    Vector3 AB = A - B;
+    Vector3 H = AB.cross(M.cross(N));
+    float h = AB.dot(N);
+    float k = (2.0 * (M.dot(N)) * (AB.dot(N))) - (2.0 * AB.dot(M));
+    Vector3 new_v = (A+B)/2.0 + (h/k)*H;
+    MeshVertex* new_vertex = addVertex(new_v);
+    return new_vertex;
+}
+void
+Mesh::sharpenMesh()
+{
+  std::set<MeshEdge*> v;
+  std::set<MeshFace*> f;
+  std::set<MeshFace*> f1;
+  std::set<MeshFace*> f2;
+  getChamferEdgeAndFace(v, f, f1, f2);
+  for (std::set<MeshFace*>::iterator i = f1.begin(); i != f1.end(); ++i)
+  {
+    triangulate((*i), 1);
+  }
+  for (std::set<MeshFace*>::iterator i = f2.begin(); i != f2.end(); ++i)
+  {
+    triangulate((*i), 2);
   }
 
 }

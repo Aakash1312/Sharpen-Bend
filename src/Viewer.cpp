@@ -26,6 +26,10 @@ bool Viewer::show_edges = false;
 std::vector<MeshEdge *> highlighted_edges;
 std::vector<MeshFace *> highlighted_faces;
 std::vector<MeshVertex *> highlighted_vertices;
+std::vector<MeshVertex *> highlighted_vertices2;
+std::vector<MeshVertex *> highlighted_vertices3;
+std::set<MeshEdge *> set_edges;
+std::set<MeshFace *> set_faces;
 
 void
 Viewer::setObject(Mesh * o)
@@ -199,8 +203,10 @@ Viewer::draw()
         int HSize = highlighted_edges.size();
         for (int i = 0; i < HSize; ++i)
         {
+          Vector3 c = highlighted_edges[i]->getEndpoint(1) -> getPosition() - highlighted_edges[i]->getEndpoint(0) -> getPosition();
+          c.unitize();
           render_system->setShader(NULL);
-          render_system->setColor(ColorRGB(1, 0, 0));
+          render_system->setColor(ColorRGB(c.x(), c.y(), c.z()));
           // render_system->setLineSize(10);
 
           render_system->beginPrimitive(Graphics::RenderSystem::Primitive::LINES);
@@ -229,11 +235,48 @@ Viewer::draw()
         for (int i = 0; i < HSize; ++i)
         {
           render_system->setShader(NULL);
-          render_system->setColor(ColorRGB(1, 1, 0));
-          render_system->setPointSize(10);
+          render_system->setColor(ColorRGB(0, 0, 1));
+          render_system->setPointSize(5);
 
           render_system->beginPrimitive(Graphics::RenderSystem::Primitive::POINTS);
             render_system->sendVertex(highlighted_vertices[i]->getPosition());
+          render_system->endPrimitive();
+        }
+
+        HSize = highlighted_vertices2.size();
+        for (int i = 0; i < HSize; ++i)
+        {
+          render_system->setShader(NULL);
+          render_system->setColor(ColorRGB(0, 1, 0));
+          render_system->setPointSize(3);
+
+          render_system->beginPrimitive(Graphics::RenderSystem::Primitive::POINTS);
+            render_system->sendVertex(highlighted_vertices2[i]->getPosition());
+          render_system->endPrimitive();
+        }
+
+        HSize = highlighted_vertices3.size();
+        for (int i = 0; i < HSize; ++i)
+        {
+          render_system->setShader(NULL);
+          render_system->setColor(ColorRGB(1, 0, 0));
+          render_system->setPointSize(7);
+
+          render_system->beginPrimitive(Graphics::RenderSystem::Primitive::POINTS);
+            render_system->sendVertex(highlighted_vertices3[i]->getPosition());
+          render_system->endPrimitive();
+        }
+
+
+        for (std::set<MeshEdge*>:: iterator i = set_edges.begin(); i != set_edges.end(); ++i)
+        {
+          render_system->setShader(NULL);
+          render_system->setColor(ColorRGB(1, 0, 0));
+          // render_system->setLineSize(10);
+
+          render_system->beginPrimitive(Graphics::RenderSystem::Primitive::LINES);
+            render_system->sendVertex((*i)->getEndpoint(0) -> getPosition());
+            render_system->sendVertex((*i)->getEndpoint(1) -> getPosition());
           render_system->endPrimitive();
         }
 
@@ -325,14 +368,17 @@ Viewer::keyPress(unsigned char key, int x, int y)
   {
     // highlighted_edges = mesh->decimateQuadricEdgeCollapse();
     highlighted_edges.clear();
-    mesh ->getNonSmoothEdges(highlighted_edges);
+    highlighted_vertices.clear();
+    // mesh ->getChamferEdgeAndFace(highlighted_edges, highlighted_faces);
+    mesh -> sharpenMesh();
     // mesh -> getSmoothFaces(highlighted_faces);
     glutPostRedisplay();
   }
     else if (key == 'a' || key == 'A')
   {
-    highlighted_faces.clear();
-    mesh -> getSmoothFaces(highlighted_faces,highlighted_edges);
+    // highlighted_faces.clear();
+    // mesh ->getChamferEdgeAndFace(set_edges, set_faces);
+    // mesh -> getSmoothFaces(highlighted_faces,highlighted_edges);
     glutPostRedisplay();
   }
     else if (key == 'c' || key == 'C')

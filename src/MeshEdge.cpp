@@ -84,3 +84,47 @@ MeshEdge::setNonSmoothFace(std::vector<MeshFace*> &v)
   }
   return 1;
 }
+
+// it is assumed that all faces are triangular
+void
+MeshEdge::addVertex(MeshVertex* v)
+{
+  // FaceIterator f1 = facesBegin();
+  // FaceIterator f2 = ++facesBegin();
+  // MeshEdge* edge1 = (*f1) -> getPredecessor(this);
+  // MeshEdge* edge2 = (*f2) -> getPredecessor(this);
+  // MeshFace* f = new MeshFace();
+  // MeshVertex* ep1;
+  // MeshVertex* ep0;
+  // if (edge1 -> getEndpoint(0) == getEndpoint(0))
+  // {
+  //   ep1 = edge1 -> getEndpoint(1);
+  //   ep0 = edge1 -> getEndpoint(0);
+  // }
+  // else
+  // {
+  //   ep0 = edge1 -> getEndpoint(1);
+  //   ep1 = edge1 -> getEndpoint(0);
+  // }
+  // f -> addVertex(ep1);
+  // f -> addVertex(ep0);
+  // f -> addVertex(v);
+  // f -> updateNormal();
+  // MeshEdge* new_edge_1 = new MeshEdge(ep1, v);
+  // MeshEdge* new_edge_2 = new MeshEdge(v, ep0);
+  // f -> addEdge(new_edge_1);
+  // f -> addEdge(edge1);
+  // f -> addEdge(new_edge_2);
+  // edge1 -> addFace(f);
+  // new_edge_1 -> addFace(f);
+  // new_edge_2 -> addFace(f);
+  // ep1 -> addFace(f);
+  // ep0 -> addFace(f);
+  // v -> addFace(f);
+  // ep1 -> addEdge(new_edge_1);
+  // ep0 -> addEdge(new_edge_2);
+  // v -> addEdge(new_edge_1);
+  // v -> addEdge(new_edge_2);
+      // MeshEdge* otherEdge = (*f1) -> getPredecessor(edge1);
+      // otherEdge -> swap();
+}

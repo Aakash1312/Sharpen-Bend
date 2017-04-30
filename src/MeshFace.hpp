@@ -32,10 +32,11 @@ class MeshFace
     typedef typename EdgeList::reverse_iterator          EdgeReverseIterator;         ///< Reverse iterator over edges.
     typedef typename EdgeList::const_reverse_iterator    EdgeConstReverseIterator;    ///< Const reverse iterator over edges.
     bool is_smooth;
+    bool is_chamfer;
     void smoothen(std::vector<MeshVertex*> &v, std::vector<MeshEdge*> &e);
     void collectEdges(std::vector<MeshEdge*> &e);
     /** Construct with the given normal. */
-    MeshFace(Vector3 const & normal_ = Vector3::zero()) : normal(normal_) {is_smooth = false;}
+    MeshFace(Vector3 const & normal_ = Vector3::zero()) : normal(normal_) {is_smooth = false;is_chamfer = false;}
 
     /** Check if the face has a given vertex. */
     bool hasVertex(Vertex const * vertex) const

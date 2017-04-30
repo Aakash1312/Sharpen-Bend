@@ -14,7 +14,7 @@
 #include <list>
 #include <type_traits>
 #include <vector>
-
+#include "set"
 /** A class for storing meshes with arbitrary topologies. */
 class Mesh : public virtual NamedObject, private Noncopyable
 {
@@ -99,10 +99,13 @@ class Mesh : public virtual NamedObject, private Noncopyable
     double getThreshold();
 
     void getSmoothEdges(std::vector<MeshEdge*> &v);
-    void getNonSmoothEdges(std::vector<MeshEdge*> &v);
+    void getChamferEdgeAndFace(std::set<MeshEdge*> &v, std::set<MeshFace*> &f, std::set<MeshFace*> &f1, std::set<MeshFace*> &f2);
+    void sharpenMesh();
     void getSmoothFaces(std::vector<MeshFace*> &smooth_faces, std::vector<MeshEdge*> smooth_edges);
     void getBrownEdges(std::vector<MeshEdge*> &v);
     void getBrownVertices(std::vector<MeshVertex*> &brown_vertices);
+    void triangulate(MeshFace* f, int num);
+    Vertex* getSharpVertex(MeshEdge* ea, int &orientation);
     /**
      * Add a vertex to the mesh, with a given location.
      *

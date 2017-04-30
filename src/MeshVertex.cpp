@@ -73,6 +73,35 @@ MeshVertex::updateNormal()
   has_precomputed_normal = false;
 }
 
+double
+MeshVertex::getIncidentFaceAngle(MeshFace* f)
+{
+  std::vector<MeshEdge*> v;
+  Vector3 me[2];
+  f -> collectEdges(v);
+  int size = v.size();
+  for (int i = 0,k =0; i < size, k < 2; ++i)
+  {
+    if (v[i] -> getEndpoint(0) == this)
+    {
+      me[k++] = v[i] -> getEndpoint(1) -> getPosition();
+    }
+    else
+    {
+      if (v[i] -> getEndpoint(1) == this)
+      {
+        me[k++] = v[i] -> getEndpoint(0) -> getPosition();
+      }      
+    }
+  }
+  Vector3 a = (me[0] - getPosition());
+  Vector3 b = (me[1] - getPosition());
+  a.unitize();
+  b.unitize();
+  return Math::fastArcCos(a.dot(b));
+
+}
+
 bool
 MeshVertex::isSmooth()
 { 
@@ -100,3 +129,19 @@ MeshVertex::markFaces(std::vector<MeshFace*> &v)
   }
 }
 
+Vector3
+MeshVertex::computeSmoothNormal()
+{
+  Vector3 N(0, 0, 0);
+  double sum = 0;
+  for (FaceIterator fj = faces.begin(); fj != faces.end(); ++fj)
+  {
+    if (((*fj) -> is_smooth))
+    {
+      double weight = getIncidentFaceAngle((*fj));
+      N +=  weight * ((*fj) -> getNormal());
+      sum += weight;
+    }
+  }
+  return N/sum;
+}

@@ -28,7 +28,8 @@ main(int argc, char * argv[])
 
   DGP_CONSOLE << "Read mesh '" << mesh.getName() << "' with " << mesh.numVertices() << " vertices, " << mesh.numEdges()
               << " edges and " << mesh.numFaces() << " faces from " << in_path;
-
+  std::vector<MeshVertex*> v;
+  // mesh.sharpenMesh(v);
   Viewer viewer;
   viewer.setObject(&mesh);
   viewer.launch(argc, argv);
