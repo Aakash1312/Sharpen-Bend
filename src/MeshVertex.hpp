@@ -38,8 +38,10 @@ class MeshVertex
     typedef typename FaceList::iterator        FaceIterator;       ///< Iterator over faces.
     typedef typename FaceList::const_iterator  FaceConstIterator;  ///< Const iterator over faces.
     bool is_smooth;
+    bool is_sharp;
     Vector3 computeSmoothNormal();
     double getIncidentFaceAngle(MeshFace* f);
+    bool isManifoldVertex();
     /** Default constructor. */
     MeshVertex()
     : position(Vector3::zero()), normal(Vector3::zero()), color(ColorRGBA(1, 1, 1, 1)), has_precomputed_normal(false),

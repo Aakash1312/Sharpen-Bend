@@ -25,6 +25,8 @@ class MeshEdge
     bool is_brown;
     bool is_chamfer;
     int orientation;
+    bool is_sharp;
+    bool bfly_divided;
     /** Construct from two endpoints. */
     MeshEdge(Vertex * v0 = NULL, Vertex * v1 = NULL)
     {
@@ -34,6 +36,8 @@ class MeshEdge
       is_brown = false;
       is_chamfer = false;
       orientation = 1;
+      is_sharp = false;
+      bfly_divided = false;
     }
 
     /** Get an endpoint of the edge. \a i = 0 returns the first endpoint and \a i = 1 the second. */

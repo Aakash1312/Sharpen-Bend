@@ -7,7 +7,7 @@
 #include <cmath>
 #include <fstream>
 #include <unordered_map>
-
+#include "DGP/Matrix.hpp"
 MeshEdge *
 Mesh::mergeEdges(Edge * e0, Edge * e1)
 {
@@ -599,7 +599,6 @@ Mesh::getThreshold()
       num_edges += 1;
     }
   }
-  std::cout << 2*threshold/num_edges << std::endl;
   return 2*threshold/num_edges;
 }
 
@@ -616,6 +615,7 @@ Mesh::getSmoothEdges(std::vector<MeshEdge*> &v)
   }
 
 }
+
 void copy(std::vector<MeshEdge*> &A, std::vector<MeshEdge*> &B)
 {
   A.clear();
@@ -670,6 +670,7 @@ Mesh::getChamferEdgeAndFace(std::set<MeshEdge*> &v, std::set<MeshFace*> &f, std:
     }
     copy(smooth_edges,temp_edges);
   }
+  filter3bis();
   smooth_edges.clear();
   for (int i = 0; i < smooth_faces.size(); ++i)
   {
@@ -683,7 +684,6 @@ Mesh::getChamferEdgeAndFace(std::set<MeshEdge*> &v, std::set<MeshFace*> &f, std:
   {
     smooth_edges[i] -> is_smooth = true;
   }
-
   for (EdgeIterator ej = edges.begin(); ej != edges.end(); ++ej)
   {
     if (!((*ej).is_smooth))
@@ -723,14 +723,111 @@ Mesh::getChamferEdgeAndFace(std::set<MeshEdge*> &v, std::set<MeshFace*> &f, std:
       f2.insert(&(*fj));
     }
   }
-
 }
 void
 Mesh::triangulate(MeshFace* f, int num)
 {
   if (num == 3)
   {
-    /* code */
+    MeshVertex* s[3];
+    MeshVertex* m[4];
+    MeshEdge* ea[3];
+    int k = 0;
+    for (MeshFace::EdgeIterator ej = f -> edges.begin(); ej != f -> edges.end(); ++ej)
+    {
+      ea[k] = &(*(*ej));
+      k++;
+      if (k == 3)
+      {
+        break;
+      }
+    }
+    s[0] = (ea[0] -> getEndpoint(0));
+    s[1] = (ea[0] -> getEndpoint(1));
+    if (ea[1] -> hasEndpoint(s[1]))
+    {
+      s[2] = ea[1] -> getOtherEndpoint(s[1]);
+    }
+    else
+    {
+      s[2] = ea[1] -> getOtherEndpoint(s[0]);      
+    }
+
+    // m[0] = new MeshVertex((s[0] -> getPosition() + s[1] -> getPosition())/2);
+    // m[1] = new MeshVertex((s[1] -> getPosition() + s[2] -> getPosition())/2);
+    // m[2] = new MeshVertex((s[0] -> getPosition() + s[2] -> getPosition())/2);
+    m[0] = getSharpVertex(ea[0], ea[0] -> orientation);
+    m[1] = getSharpVertex(ea[1], ea[1] -> orientation);
+    m[2] = getSharpVertex(ea[2], ea[2] -> orientation);
+    Vector3 A;
+    Vector3 B;
+    Vector3 C;
+    Vector3 N;
+    Vector3 M;
+    Vector3 S;
+    A = s[0] -> getPosition();
+    B = s[1] -> getPosition();
+    C = s[2] -> getPosition();
+    N = s[0] -> computeSmoothNormal();
+    M = s[1] -> computeSmoothNormal();
+    S = s[2] -> computeSmoothNormal();
+    N.unitize();
+    M.unitize();
+    S.unitize();
+    float a = A.dot(N);
+    float b = B.dot(M);
+    float c = C.dot(S);
+    float result[] = {0, 0, 0};
+    float constant[] = {a, b, c};
+    float Nm[] = {N.x(), N.y(), N.z()};
+    float Mm[] = {M.x(), M.y(), M.z()};
+    float Sm[] = {S.x(), S.y(), S.z()};
+    // Matrix3 E = Matrix3::fromRows(N, M, S);
+    Matrix<float> E(3,3);
+    E.setRow(0, Nm);
+    E.setRow(1, Mm);
+    E.setRow(2, Sm);
+    E.invert();
+    E.postmulVector(constant, result);
+    MeshVertex* new_vertex = new MeshVertex(Vector3(result[0], result[1], result[2]));
+
+    std::vector<MeshVertex*> mesh_vertices;
+
+    mesh_vertices.push_back(s[0]);
+    mesh_vertices.push_back(new_vertex);
+    mesh_vertices.push_back(m[2]);
+    addFace(mesh_vertices.begin(), mesh_vertices.end());
+
+    mesh_vertices.clear();
+    mesh_vertices.push_back(m[2]);
+    mesh_vertices.push_back(s[2]);
+    mesh_vertices.push_back(new_vertex);
+    addFace(mesh_vertices.begin(), mesh_vertices.end());
+
+    mesh_vertices.clear();
+    mesh_vertices.push_back(m[1]);
+    mesh_vertices.push_back(s[2]);
+    mesh_vertices.push_back(new_vertex);
+    addFace(mesh_vertices.begin(), mesh_vertices.end());
+
+    mesh_vertices.clear();
+    mesh_vertices.push_back(m[1]);
+    mesh_vertices.push_back(s[1]);
+    mesh_vertices.push_back(new_vertex);
+    addFace(mesh_vertices.begin(), mesh_vertices.end());
+
+    mesh_vertices.clear();
+    mesh_vertices.push_back(s[1]);
+    mesh_vertices.push_back(new_vertex);
+    mesh_vertices.push_back(m[0]);
+    addFace(mesh_vertices.begin(), mesh_vertices.end());
+
+    mesh_vertices.clear();
+    mesh_vertices.push_back(s[0]);
+    mesh_vertices.push_back(new_vertex);
+    mesh_vertices.push_back(m[0]);
+    addFace(mesh_vertices.begin(), mesh_vertices.end());
+
   }
   if (num == 2)
   {
@@ -824,8 +921,7 @@ Mesh::triangulate(MeshFace* f, int num)
     } else {
       s[2] = nse->getOtherEndpoint(s[1]);
     }
-    int orientation = 1;
-    m = getSharpVertex(se, orientation);
+    m = getSharpVertex(se, se -> orientation);
     std::vector<MeshVertex*> mesh_vertices;
     mesh_vertices.push_back(s[2]);
     mesh_vertices.push_back(s[0]);
@@ -870,6 +966,7 @@ Mesh::getSharpVertex(MeshEdge* ea, int &orientation)
     float k = (2.0 * (M.dot(N)) * (AB.dot(N))) - (2.0 * AB.dot(M));
     Vector3 new_v = (A+B)/2.0 + (h/k)*H;
     MeshVertex* new_vertex = addVertex(new_v);
+    new_vertex -> is_sharp = true;
     return new_vertex;
 }
 void
@@ -888,7 +985,11 @@ Mesh::sharpenMesh()
   {
     triangulate((*i), 2);
   }
-
+  for (std::set<MeshFace*>::iterator i = f.begin(); i != f.end(); ++i)
+  {
+    triangulate((*i), 3);
+  }
+  bender();
 }
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -952,26 +1053,6 @@ Mesh::getSmoothFaces(std::vector<MeshFace*> &smooth_faces, std::vector<MeshEdge*
         (*vj).markFaces(smooth_faces);
       }
     }
-    // std::vector<MeshEdge*> face_edges;
-    // for (FaceIterator fj = faces.begin(); fj != faces.end(); ++fj)
-    // {
-    //   face_edges.clear();
-    //   (*fj).collectEdges(face_edges);
-    //   int i;
-    //   for (i = 0; i < face_edges.size(); ++i)
-    //   {
-    //     if (!(face_edges[i] -> is_brown))
-    //     {
-    //       break;
-    //     }
-    //   }
-    //   if (i == face_edges.size())
-    //   {
-    //     (*fj).is_smooth = true;
-    //     smooth_faces.push_back(&(*fj));
-    //   }
-    // }
-    // return;
     bool change = true;
     std::vector<MeshEdge*> temp_edges;
     change = false;
@@ -1016,4 +1097,319 @@ Mesh::getSmoothFaces(std::vector<MeshFace*> &smooth_faces, std::vector<MeshEdge*
     }
     copy(smooth_edges,temp_edges);
   }
+}
+
+
+void
+Mesh::filter3bis() {
+  // Find non-brown edges with 2 adjacent red triangles and tag the endpoints as sharp.
+  for (EdgeIterator it = edgesBegin(); it != edgesEnd(); ++it) {
+    if (!(it->is_brown)) {
+      bool red_ngbrs = true;
+      for (MeshEdge::FaceIterator face_it = it->facesBegin(); face_it != it->facesEnd(); ++face_it) {
+        if (!((*face_it)->is_smooth)) {
+          red_ngbrs = false;
+          break;
+        }
+      }
+      if (red_ngbrs) {
+        MeshVertex* v1 = it->getEndpoint(0);
+        MeshVertex* v2 = it->getEndpoint(1);
+        v1->is_sharp = true;
+        v2->is_sharp = true;
+      }
+    }
+  }
+
+  // Tag all vertices having a non-manifold red neighbourhood
+  // TODO
+}
+
+void
+Mesh::tagAllSharpEdges() {
+  for (EdgeIterator it = edgesBegin(); it != edgesEnd(); ++it) {
+    // Sharp edge if both vertices are sharp
+    if (it->getEndpoint(0)->is_sharp && it->getEndpoint(1)->is_sharp) {
+      it->is_sharp = true;
+    }
+    // All boundary edges are sharp edges
+    if (it->isBoundary()) {
+      it->is_sharp = true;
+    }
+  }
+}
+
+void
+Mesh::bender() {
+  tagAllSharpEdges();
+  butterflySubdivide(faces);
+}
+
+void
+Mesh::butterflySubdivide(std::list<MeshFace> faces) {
+  std::map<MeshEdge*, Vector3> new_vertices;
+  int count = 0;
+  for (std::list<MeshFace> :: iterator it = faces.begin(); it != faces.end(); ++it) {
+    for (MeshFace::EdgeIterator it2 = it->edgesBegin(); it2 != it->edgesEnd(); ++it2) {
+      if (!((*it2)->bfly_divided)) {
+        Vector3 v = divideEdge(*it2);
+        new_vertices[*it2] = v;
+        (*it2)->bfly_divided = true;
+      }
+    }
+  }
+  count = 0;
+  for (std::list<MeshFace> :: iterator it = faces.begin(); it != faces.end(); ++it) {
+    std::vector<MeshVertex*> vec(3); 
+    for (MeshFace::EdgeIterator it2 = it->edgesBegin(); it2 != it->edgesEnd(); ++it2) {
+
+    }    
+  }
+}
+
+void
+Mesh::addFaces(MeshVertex* v[3]) {
+
+}
+
+Vector3
+Mesh::divideEdge(MeshEdge* edge) {
+  // Degree check
+  int k0 = edge->getEndpoint(0)->degree();
+  int k1 = edge->getEndpoint(1)->degree();
+  Vector3 vertex;
+  if (k0 ==  6 && k1 == 6) {
+    vertex = divideRegularEdge(edge);
+  } else if (k0 != 6 && k1 != 6) {
+    Vector3 v1 = divideExtraordinaryEdge(edge, edge->getEndpoint(0));
+    Vector3 v2 = divideExtraordinaryEdge(edge, edge->getEndpoint(0));
+    vertex = (v1+v2)/2.0;
+  } else {
+    if (k0 == 6) {
+      vertex = divideExtraordinaryEdge(edge, edge->getEndpoint(0));
+    } else {
+      vertex = divideExtraordinaryEdge(edge, edge->getEndpoint(1));
+    }
+  }
+  return vertex;
+}
+
+Vector3
+Mesh::divideExtraordinaryEdge(MeshEdge* edge, MeshVertex* vertex) {
+
+}
+
+Vector3
+Mesh::divideRegularEdge(MeshEdge* edge) {
+  MeshEdge *e1[4];
+  MeshEdge *e2[4][2];
+  std::vector<MeshFace*> faces;
+  Vector3 final_position;
+  int sz, i;
+  // Assuming manifold mesh
+  for (MeshEdge::FaceIterator it = edge->facesBegin(); it != edge->facesEnd(); ++it) {
+    faces.push_back(*it);
+  }
+  sz = faces.size();
+  if (sz == 1 || edge->is_sharp) {
+    // Boundary Edge or sharp edge
+    MeshVertex* v1 = edge->getEndpoint(0);
+    MeshVertex* v2 = edge->getEndpoint(2);
+    if (v1->isManifoldVertex() && v2->isManifoldVertex()) {
+      MeshFace *f1, *f2, *f3, *f4;
+      e1[0] = faces[0]->getSuccessor(edge);
+      e1[1] = faces[0]->getSuccessor(e1[0]);
+      e2[0][0] = findCorrespondingEdge(faces[0], e1[0], edge, f1);
+      e2[0][1] = findCorrespondingEdge(faces[0], e1[1], edge, f2);
+      e2[1][0] = findCorrespondingEdge(f1, e2[0][0], edge, f3);
+      e2[1][1] = findCorrespondingEdge(f2, e2[0][1], edge, f4);
+      final_position = computeStencilR2(edge, e2[1][0], e2[1][1]);
+    } else if (!(v1->isManifoldVertex() || v2->isManifoldVertex())) {
+      final_position = (v1->getPosition() + v2->getPosition())/2.0;
+    } else {
+
+    }
+  } else if (sz == 2) {
+    // 2-faced non-sharp edge
+    e1[0] = faces[0]->getSuccessor(edge);
+    e1[1] = faces[0]->getSuccessor(e1[0]);
+    e1[2] = faces[1]->getSuccessor(edge);
+    e1[3] = faces[1]->getSuccessor(e1[0]);
+    if (!(e1[0]->isConnectedTo(*e1[3]))) {
+      e1[3] = faces[1]->getSuccessor(edge);
+      e1[2] = faces[1]->getSuccessor(e1[0]);
+    }
+    MeshFace* e2_face;
+    for (i = 0; i < 4; ++i) {
+      // Can possibly be NULL
+      e2[i][0] = findCorrespondingEdge(faces[i/2], e1[i], edge, e2_face);
+      if (e2_face == NULL) {
+        e2[i][1] = NULL;
+      } else if (e2_face->getSuccessor(e2[i][0]) != e1[i]) {
+        e2[i][1] = e2_face->getSuccessor(e2[i][0]);
+      } else {
+        e2[i][1] = e2_face->getPredecessor(e2[i][0]);
+      }
+    }
+    bool b1 = isPairOfEdgesSharp(e1[0], e2[3][0]);
+    bool b2 = isPairOfEdgesSharp(e2[1][0], e1[2]);
+    bool b3 = isPairOfEdgesSharp(e2[0][0], e1[3]);
+    bool b4 = isPairOfEdgesSharp(e1[1], e2[2][0]);
+    if (b1 && b2) {
+      final_position = computeStencilR3(edge); 
+    } else if (b3 && b4) {
+      final_position = computeStencilR3(edge); 
+    } else if (b1 && b4) {
+      final_position = computeStencilR5(edge, e2[3][1], e2[2][1]);
+    } else if (b2 && b3) {
+      final_position = computeStencilR5(edge, e2[0][1], e2[1][1]);
+    } else if (b1 || b2 || b3 || b4) {
+      if (b1) {
+        final_position = computeStencilR4(edge, e2[1][1], e2[3][1], e2[2][1], e1[0], e2[3][0]);
+      } else if (b2) {
+        final_position = computeStencilR4(edge, e2[3][1], e2[1][1], e2[0][1], e2[1][0], e1[2]);
+      } else if (b3) {
+        final_position = computeStencilR4(edge, e2[2][1], e2[1][1], e2[0][1], e2[0][0], e1[3]);
+      } else if (b4) {
+        final_position = computeStencilR4(edge, e2[0][1], e2[3][1], e2[2][1], e1[1], e2[2][0]);
+      }
+    } else {
+      final_position = computeStencilR1(edge, e2[0][1], e2[1][1], e2[3][1], e2[2][1]);
+    }
+  } else {
+    // Non-manifold case
+  }
+  return final_position;
+}
+
+MeshEdge*
+Mesh::findCorrespondingEdge(MeshFace* adjacent_face, MeshEdge* adjacent_edge, MeshEdge* connected_edge, MeshFace* face) {
+  // Will choose the edge on some face adjacent to adjacent_face through adjacent_edge and connected to connected_edge
+  for (MeshEdge::FaceIterator it = adjacent_edge->facesBegin(); it != adjacent_edge->facesEnd(); ++it) {
+    if (*it != adjacent_face) {
+      face = *it;
+      break;
+    }
+  }
+  MeshEdge* edge;
+  if (face != NULL && face->getSuccessor(adjacent_edge) != NULL) {
+    edge = face->getSuccessor(adjacent_edge);
+    if (!(edge->isConnectedTo(*connected_edge))) {
+      edge = face->getPredecessor(adjacent_edge);
+    }
+  }
+  return edge;
+}
+
+bool
+Mesh::isPairOfEdgesSharp(MeshEdge* e1, MeshEdge* e2) {
+  if (e1 == NULL || e2 == NULL) {
+    return false;
+  } else {
+    return e1->is_sharp && e2->is_sharp;
+  }
+}
+
+Vector3
+Mesh::computeStencilR3(MeshEdge* edge) {
+  Vector3 v1 = edge->getEndpoint(0)->getPosition();
+  Vector3 v2 = edge->getEndpoint(1)->getPosition();
+  return (v1+v2)/2.0;
+}
+
+Vector3
+Mesh::computeStencilR5(MeshEdge* edge, MeshEdge* adj1, MeshEdge* adj2) {
+  Vector3 v1 = edge->getEndpoint(0)->getPosition();
+  Vector3 v2 = edge->getEndpoint(1)->getPosition();
+  Vector3 v3, v4, v5;
+  if (adj2->hasEndpoint(adj1->getEndpoint(0))) {
+    v3 = adj1->getEndpoint(1)->getPosition();
+    v4 = adj1->getEndpoint(0)->getPosition();
+    v5 = adj2->getOtherEndpoint(adj1->getEndpoint(0))->getPosition();
+  } else {
+    v3 = adj1->getEndpoint(0)->getPosition();
+    v4 = adj1->getEndpoint(1)->getPosition();
+    v5 = adj2->getOtherEndpoint(adj1->getEndpoint(1))->getPosition();
+  }
+  return (v1/2.0) + (v2/2.0) + (v3/-8.0) + (v4/4.0) + (v5/-8.0);
+}
+
+Vector3
+Mesh::computeStencilR4(MeshEdge* edge, MeshEdge* up, MeshEdge* down1, MeshEdge* down2, MeshEdge* sharp_up, MeshEdge* sharp_down) {
+  MeshVertex* mv1 = edge->getEndpoint(0);
+  MeshVertex* mv3 = down1->getEndpoint(0);
+  MeshVertex* mv4 = down1->getEndpoint(1);
+  MeshVertex* mv6 = up->getEndpoint(0);
+  Vector3 v[8];
+  if (sharp_up->hasEndpoint(mv1)) {
+    v[1] = edge->getEndpoint(0)->getPosition();
+    v[2] = edge->getEndpoint(1)->getPosition();
+  } else {
+    v[1] = edge->getEndpoint(1)->getPosition();
+    v[2] = edge->getEndpoint(0)->getPosition();
+  }
+  if (sharp_up->hasEndpoint(mv6)) {
+    v[6] = up->getEndpoint(0)->getPosition();
+    v[7] = up->getEndpoint(1)->getPosition();
+  } else {
+    v[6] = up->getEndpoint(1)->getPosition();
+    v[7] = up->getEndpoint(0)->getPosition();
+  }
+  if (sharp_down->hasEndpoint(mv3)) {
+    v[3] = down1->getEndpoint(0)->getPosition();
+    v[4] = down1->getEndpoint(1)->getPosition();
+    v[5] = down2->getOtherEndpoint(mv4)->getPosition();
+  } else {
+    v[3] = down1->getEndpoint(1)->getPosition();
+    v[4] = down1->getEndpoint(0)->getPosition();
+    v[5] = down2->getOtherEndpoint(mv3)->getPosition();
+  }
+  return (3.0*v[1]/8.0) + (5.0*v[2]/8.0) + (-1.0*v[3]/16.0) + (3.0*v[4]/16.0) + (-1.0*v[5]/8.0) + (v[6]/16.0) + (-1.0*v[7]/16.0);
+}
+
+Vector3
+Mesh::computeStencilR1(MeshEdge* edge, MeshEdge* up1, MeshEdge* up2, MeshEdge* down1, MeshEdge* down2) {
+  Vector3 v[9];
+  v[1] = edge->getEndpoint(0)->getPosition();
+  v[2] = edge->getEndpoint(1)->getPosition();
+  if (up2->hasEndpoint(up1->getEndpoint(0))) {
+    v[3] = up1->getEndpoint(1)->getPosition();
+    v[4] = up1->getEndpoint(0)->getPosition();
+    v[5] = up2->getOtherEndpoint(up1->getEndpoint(0))->getPosition();
+  } else {
+    v[3] = up1->getEndpoint(0)->getPosition();
+    v[4] = up1->getEndpoint(1)->getPosition();
+    v[5] = up2->getOtherEndpoint(up1->getEndpoint(1))->getPosition();
+  }
+  if (down2->hasEndpoint(down1->getEndpoint(0))) {
+    v[6] = down1->getEndpoint(1)->getPosition();
+    v[7] = down1->getEndpoint(0)->getPosition();
+    v[8] = down2->getOtherEndpoint(down1->getEndpoint(0))->getPosition();
+  } else {
+    v[6] = down1->getEndpoint(0)->getPosition();
+    v[7] = down1->getEndpoint(1)->getPosition();
+    v[8] = down2->getOtherEndpoint(down1->getEndpoint(1))->getPosition();
+  }
+  return (v[1]/2.0) + (v[2]/2.0) + (-1.0*v[3]/16.0) + (v[4]/8.0) + (-1.0*v[5]/16.0) + (-1.0*v[6]/16.0) + (v[7]/8.0) + (-1.0*v[8]/16.0);
+}
+
+Vector3
+Mesh::computeStencilR2(MeshEdge* edge, MeshEdge* left, MeshEdge* right) {
+  Vector3 v1, v2, v3, v4;
+  MeshVertex* mv1, *mv2;
+  mv1 = edge->getEndpoint(0);
+  mv2 = edge->getEndpoint(1);
+  v1 = mv1->getPosition();
+  v2 = mv2->getPosition();
+  if (left->hasEndpoint(mv1)) {
+    v3 = left->getOtherEndpoint(mv1)->getPosition();
+  } else {
+    v3 = left->getOtherEndpoint(mv2)->getPosition();
+  }
+  if (right->hasEndpoint(mv1)) {
+    v3 = right->getOtherEndpoint(mv1)->getPosition();
+  } else {
+    v3 = right->getOtherEndpoint(mv2)->getPosition();
+  }
+  return (9.0*v1/16.0) + (9.0*v2/16.0) + (-1.0*v3/16.0) + (-1.0*v4/16.0);
 }

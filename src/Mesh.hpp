@@ -106,6 +106,23 @@ class Mesh : public virtual NamedObject, private Noncopyable
     void getBrownVertices(std::vector<MeshVertex*> &brown_vertices);
     void triangulate(MeshFace* f, int num);
     Vertex* getSharpVertex(MeshEdge* ea, int &orientation);
+
+    void filter3bis();
+    void tagAllSharpEdges();
+    void bender();
+    void butterflySubdivide(std::list<MeshFace> faces);
+    void addFaces(MeshVertex* v[3]);
+    Vector3 divideEdge(MeshEdge* edge);
+    Vector3 divideExtraordinaryEdge(MeshEdge* edge, MeshVertex* vertex);
+    Vector3 divideRegularEdge(MeshEdge* edge);
+    MeshEdge* findCorrespondingEdge(MeshFace* adjacent_face, MeshEdge* adjacent_edge, MeshEdge* connected_edge, MeshFace* face);
+    bool isPairOfEdgesSharp(MeshEdge* e1, MeshEdge* e2);
+    Vector3 computeStencilR3(MeshEdge* edge);
+    Vector3 computeStencilR5(MeshEdge* edge, MeshEdge* adj1, MeshEdge* adj2);
+    Vector3 computeStencilR4(MeshEdge* edge, MeshEdge* up, MeshEdge* down1, MeshEdge* down2, MeshEdge* sharp_up, MeshEdge* sharp_down);
+    Vector3 computeStencilR1(MeshEdge* edge, MeshEdge* up1, MeshEdge* up2, MeshEdge* down1, MeshEdge* down2);
+    Vector3 computeStencilR2(MeshEdge* edge, MeshEdge* left, MeshEdge* right);
+
     /**
      * Add a vertex to the mesh, with a given location.
      *

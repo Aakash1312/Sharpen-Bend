@@ -145,3 +145,18 @@ MeshVertex::computeSmoothNormal()
   }
   return N/sum;
 }
+
+bool
+MeshVertex::isManifoldVertex() {
+  int count = 0;
+  for (MeshVertex::EdgeIterator it = edgesBegin(); it != edgesEnd(); ++it) {
+    if ((*it)->is_sharp) {
+      ++count;
+    }
+  }
+  if (count == 2) {
+    return true;
+  } else {
+    return false;
+  }
+}
